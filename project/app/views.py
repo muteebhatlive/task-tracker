@@ -56,11 +56,9 @@ class TaskAdd(APIView):
                     task_ids.append(task['id'])
                 else:
                     return Response({'error': 'Task ID missing'}, status=status.HTTP_400_BAD_REQUEST)
-            print(task_ids)
             for id in task_ids:
                 task_obj = Task.objects.filter(id=id)
                 task_obj.delete()
-                print(task_obj)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({'error': 'No tasks provided in request'}, status=status.HTTP_400_BAD_REQUEST)
