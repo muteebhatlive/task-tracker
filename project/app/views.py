@@ -9,15 +9,61 @@ from django.core.exceptions import ObjectDoesNotExist
 # Create your views here.
 
 
-@api_view(['POST'])
-def create_task(request):
-    if request.data:
-        # Ensure 'completed' field is set to False by default
-        request.data['is_completed'] = False
-        serializer = TaskSerializer(data=request.data)
-        if serializer.is_valid():
-            task = serializer.save()
-            return Response({'id': task.id}, status=status.HTTP_201_CREATED)
+# @api_view(['POST'])
+# def create_task(request):
+#     if request.data:
+#         # Ensure 'completed' field is set to False by default
+#         request.data['is_completed'] = False
+#         serializer = TaskSerializer(data=request.data)
+#         if serializer.is_valid():
+#             task = serializer.save()
+#             return Response({'id': task.id}, status=status.HTTP_201_CREATED)
+
+class TaskAdd(APIView):
+    def post(self, request):
+        if 'tasks' in request.data:
+            tasks_data = request.data['tasks']
+            added_tasks = []
+
+            for task_data in tasks_data:
+                task_data['is_completed'] = task_data.get('is_completed', False)
+                serializer = TaskSerializer(data=task_data)
+                if serializer.is_valid():
+                    task = serializer.save()
+                    added_tasks.append({'id': task.id})
+                else:
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'tasks': added_tasks}, status=status.HTTP_201_CREATED)
+        elif 'title' in request.data:
+            request.data['is_completed'] = False
+            serializer = TaskSerializer(data=request.data)
+            if serializer.is_valid():
+                task = serializer.save()
+                return Response({'id': task.id}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'error': 'No tasks provided in request'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+   
+    
+    def delete(self, request):
+        if 'tasks' in request.data:
+            tasks_data = request.data['tasks']
+            task_ids = []
+            for task in tasks_data:
+                if 'id' in task:
+                    task_ids.append(task['id'])
+                else:
+                    return Response({'error': 'Task ID missing'}, status=status.HTTP_400_BAD_REQUEST)
+            print(task_ids)
+            for id in task_ids:
+                task_obj = Task.objects.filter(id=id)
+                task_obj.delete()
+                print(task_obj)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({'error': 'No tasks provided in request'}, status=status.HTTP_400_BAD_REQUEST)
         
         
 @api_view(['GET'])
